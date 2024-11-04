@@ -5,7 +5,7 @@ int alertFailureCount = 0;
 int testInCelcius = 0;
 
 int mockNetworkAlert(float celcius) {
-    testCelcius = celcius;
+    testInCelcius = celcius;
     printf("MOCK ALERT: Temperature is %.1f celcius.\n", celcius);
     // Return 200 for ok
     // Return 500 for not-ok
