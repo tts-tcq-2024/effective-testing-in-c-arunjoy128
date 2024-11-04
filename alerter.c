@@ -2,59 +2,50 @@
 #include <assert.h>
 
 int alertFailureCount = 0;
-int testInCelcius = 0;
 
-int mockNetworkAlert(float celcius) {
-    testInCelcius = celcius;
-    printf("MOCK ALERT: Temperature is %.1f celcius.\n", celcius);
+int networkAlertStub(float celcius) {
+    printf("ALERT: Temperature is %.1f celcius.\n", celcius);
     // Return 200 for ok
     // Return 500 for not-ok
-    // stub always succeeds and returns 200
+    // Stub always returns 500 for this test case
     return 500;
 }
-
-int realNetworkAlert(float celcius) {
-    printf("REAL ALERT: Temperature is %.1f celcius.\n", celcius);
-    // Return 200 for ok
-    // Return 500 for not-ok
-    return (celcius > 200) ? 500 : 200;
-}
-
-void alertInCelcius(float farenheit, int(*networkAlertFunc)(float)) {
-    float celcius = (farenheit - 32) * 5 / 9;
-    int returnCode = networkAlertFunc(celcius);
-    if (returnCode != 200) {
-        // non-ok response is not an error! Issues happen in life!
-        // let us keep a count of failures to report
-        // However, this code doesn't count failures!
-        // Add a test below to catch this bug. Alter the stub above, if needed.
-        alertFailureCount = alertFailureCount + 1;
-    }
-}
-
 
 void alertInCelcius(float farenheit) {
     float celcius = (farenheit - 32) * 5 / 9;
     int returnCode = networkAlertStub(celcius);
     if (returnCode != 200) {
-        // non-ok response is not an error! Issues happen in life!
-        // let us keep a count of failures to report
-        // However, this code doesn't count failures!
-        // Add a test below to catch this bug. Alter the stub above, if needed.
-        alertFailureCount += 0;
+        // Increment the failure count if the return code is not 200
+        alertFailureCount += 1;
     }
 }
 
+float actualCelicusReceived;
+int networkAlertCallCount = 0;
+
+int networkAlertMock(float celcius) {
+    actualCelicusReceived = celcius;
+    ++networkAlertCallCount;
+    return 500;
+}
+
+void stateBasedTest() {
+    alertInCelcius(400.5);
+    assert(alertFailureCount == 1);
+}
+
+void behaviorTest() {
+    alertInCelcius(303.6);
+    assert(alertFailureCount == 2);  // Since stateBasedTest already increments by 1
+    float expectedCelToBeReceivedByDependency = (303.6 - 32) * 5 / 9;
+    assert(actualCelicusReceived == expectedCelToBeReceivedByDependency);
+    assert(networkAlertCallCount == 1);
+}
+
 int main() {
-    alertInCelcius(103.6, mockNetworkAlert);
-    alertInCelcius(400.5, mockNetworkAlert);
-    assert(alertFailureCount == 2);
-    printf("%d alerts failed \n\n", alertFailureCount);
-    
-    alertInCelcius(103.6, realNetworkAlert);
-    alertInCelcius(400.5, realNetworkAlert);
-    assert(alertFailureCount == 4);
-    printf("%d alerts failed \n", alertFailureCount);
-    printf("\nAll is well (maybe!)");
+    stateBasedTest();
+    behaviorTest();
+    printf("%d alerts failed.\n", alertFailureCount);
+    printf("All is well (maybe!)\n");
     return 0;
 }
